@@ -1,25 +1,25 @@
 import { z } from "zod";
 
+const nullableModelString = z.string().nullable().default(null);
+
 export const agentFindingSchema = z.object({
   findingType: z.string().min(1),
-  severity: z.enum(["low", "medium", "high"]),
+  severity: z.preprocess(
+    (value) =>
+      typeof value === "string" && ["low", "medium", "high"].includes(value)
+        ? value
+        : "medium",
+    z.enum(["low", "medium", "high"]),
+  ),
   title: z.string().min(1),
   description: z.string().min(1),
   reasoning: z.string().min(1),
-  confidence: z.number().min(0).max(1),
-  relatedEntityType: z
-    .enum(["chore", "grocery", "bill", "calendar_event"])
-    .nullable(),
-  relatedEntityId: z.string().uuid().nullable(),
-  suggestedMemberId: z.string().uuid().nullable(),
-  proposedAction: z.enum([
-    "no_action",
-    "reassign_chore",
-    "assign_grocery",
-    "remind_bill",
-    "create_nudge",
-  ]),
-  nudgeMessage: z.string().nullable(),
+  confidence: z.coerce.number().min(0).max(1),
+  relatedEntityType: nullableModelString,
+  relatedEntityId: nullableModelString,
+  suggestedMemberId: nullableModelString,
+  proposedAction: z.string().default("no_action"),
+  nudgeMessage: nullableModelString,
 });
 
 export const agentResultSchema = z.object({

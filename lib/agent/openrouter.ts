@@ -119,5 +119,15 @@ Return exactly this JSON shape:
     throw new Error("OpenRouter returned invalid JSON.");
   }
 
-  return agentResultSchema.parse(parsedJson);
+  const validated = agentResultSchema.safeParse(parsedJson);
+
+  if (!validated.success) {
+    console.error("Household agent response validation failed:", {
+      issues: validated.error.issues,
+      response: parsedJson,
+    });
+    throw new Error("OpenRouter returned an unexpected agent response shape.");
+  }
+
+  return validated.data;
 }

@@ -10,6 +10,21 @@ function isValidId(
   return value !== null && validIds.has(value);
 }
 
+const validEntityTypes = [
+  "chore",
+  "grocery",
+  "bill",
+  "calendar_event",
+] as const;
+
+const validActions = [
+  "no_action",
+  "reassign_chore",
+  "assign_grocery",
+  "remind_bill",
+  "create_nudge",
+] as const;
+
 export async function runHouseholdAgent(
   triggerType: "manual" | "scheduled",
 ) {
@@ -52,11 +67,17 @@ export async function runHouseholdAgent(
         calendar_event: eventIds,
       };
 
+      const relatedEntityType = validEntityTypes.includes(
+        finding.relatedEntityType as (typeof validEntityTypes)[number],
+      )
+        ? (finding.relatedEntityType as (typeof validEntityTypes)[number])
+        : null;
+
       const relatedEntityId =
-        finding.relatedEntityType && finding.relatedEntityId
+        relatedEntityType && finding.relatedEntityId
           ? isValidId(
               finding.relatedEntityId,
-              entityIds[finding.relatedEntityType],
+              entityIds[relatedEntityType],
             )
             ? finding.relatedEntityId
             : null
@@ -78,10 +99,14 @@ export async function runHouseholdAgent(
         description: finding.description,
         reasoning: finding.reasoning,
         confidence: finding.confidence,
-        related_entity_type: finding.relatedEntityType,
+        related_entity_type: relatedEntityType,
         related_entity_id: relatedEntityId,
         suggested_member_id: suggestedMemberId,
-        proposed_action: finding.proposedAction,
+        proposed_action: validActions.includes(
+          finding.proposedAction as (typeof validActions)[number],
+        )
+          ? finding.proposedAction
+          : "no_action",
         nudge_message: finding.nudgeMessage,
         status: "open",
       };
