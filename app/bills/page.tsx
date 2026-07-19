@@ -2,6 +2,7 @@ import { format, isPast } from "date-fns";
 import { ArrowLeft, Check, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { AppShell } from "@/components/app-shell";
 import { getCurrentHouseholdContext } from "@/lib/household-context";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -118,14 +119,15 @@ export default async function BillsPage({
                         <form action={updateBillStatus}>
                           <input type="hidden" name="billId" value={bill.id} />
                           <input type="hidden" name="status" value="paid" />
-                          <button
-                            type="submit"
+                          <SubmitButton
                             title="Mark bill paid"
                             aria-label={`Mark ${bill.name} paid`}
+                            pendingLabel="Marking bill paid"
+                            showPendingLabel={false}
                             className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                           >
                             <Check className="size-4" aria-hidden="true" />
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                       <Link
@@ -253,12 +255,12 @@ export default async function BillsPage({
                 />
               </div>
 
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel={editingBill ? "Saving changes..." : "Adding bill..."}
                 className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 {editingBill ? "Save changes" : "Add bill"}
-              </button>
+              </SubmitButton>
             </form>
           </section>
         </div>

@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Check, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { AppShell } from "@/components/app-shell";
 import { getCurrentHouseholdContext } from "@/lib/household-context";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -122,14 +123,15 @@ export default async function GroceriesPage({
                         <form action={updateGroceryStatus}>
                           <input type="hidden" name="groceryId" value={item.id} />
                           <input type="hidden" name="status" value="purchased" />
-                          <button
-                            type="submit"
+                          <SubmitButton
                             title="Mark item purchased"
                             aria-label={`Mark ${item.name} purchased`}
+                            pendingLabel="Marking item purchased"
+                            showPendingLabel={false}
                             className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                           >
                             <Check className="size-4" aria-hidden="true" />
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                       <Link
@@ -242,12 +244,12 @@ export default async function GroceriesPage({
                 </select>
               </div>
 
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel={editingItem ? "Saving changes..." : "Adding item..."}
                 className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 {editingItem ? "Save changes" : "Add item"}
-              </button>
+              </SubmitButton>
             </form>
           </section>
         </div>

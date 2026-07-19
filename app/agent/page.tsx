@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { AppShell } from "@/components/app-shell";
 import { RunAgentButton } from "@/components/agent/run-agent-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getCurrentHouseholdContext } from "@/lib/household-context";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { acceptFinding, applyFinding, dismissFinding } from "./actions";
@@ -101,6 +102,9 @@ export default async function AgentPage() {
   const nudges = (nudgesResult.data ?? []) as Nudge[];
   const memberNames = new Map(members.map((member) => [member.id, member.name]));
   const latestRun = runs[0];
+  const latestScheduledRun = runs.find(
+    (run) => run.trigger_type === "scheduled",
+  );
   const openFindings = findings.filter((finding) => finding.status === "open");
   const isAgentRunning = runs.some((run) => run.status === "running");
   const findingCountsByRun = new Map<string, number>();
@@ -141,9 +145,13 @@ export default async function AgentPage() {
           />
           <SummaryCard
             icon={CheckCircle2}
-            label="Runs completed"
-            value={runs.filter((run) => run.status === "completed").length}
-            detail="Manual runs so far"
+            label="Weekly automation"
+            value={latestScheduledRun ? latestScheduledRun.status : "Ready"}
+            detail={
+              latestScheduledRun
+                ? `Last scheduled ${formatDistanceToNow(new Date(latestScheduledRun.started_at), { addSuffix: true })}`
+                : "Runs Sunday at 9:00 AM IST"
+            }
           />
         </section>
 
@@ -177,7 +185,7 @@ export default async function AgentPage() {
             <div>
               <h2 className="font-semibold">Run history</h2>
               <p className="text-sm text-muted-foreground">
-                Manual runs now, scheduled runs after Vercel Cron is connected.
+                Manual runs are on demand. Scheduled runs happen every Sunday at 9:00 AM IST.
               </p>
             </div>
             <span className="text-sm text-muted-foreground">
@@ -284,22 +292,22 @@ export default async function AgentPage() {
                       <div className="flex shrink-0 items-start gap-2">
                         <form action={acceptFinding}>
                           <input type="hidden" name="findingId" value={finding.id} />
-                          <button
-                            type="submit"
+                          <SubmitButton
+                            pendingLabel="Approving..."
                             className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                           >
                             Approve
-                          </button>
+                          </SubmitButton>
                         </form>
 
                         <form action={dismissFinding}>
                           <input type="hidden" name="findingId" value={finding.id} />
-                          <button
-                            type="submit"
+                          <SubmitButton
+                            pendingLabel="Dismissing..."
                             className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
                           >
                             Dismiss
-                          </button>
+                          </SubmitButton>
                         </form>
                       </div>
                     )}
@@ -307,12 +315,12 @@ export default async function AgentPage() {
                     {finding.status === "accepted" && (
                       <form action={applyFinding} className="shrink-0">
                         <input type="hidden" name="findingId" value={finding.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          pendingLabel="Applying..."
                           className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         >
                           Apply recommendation
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
 
@@ -325,12 +333,12 @@ export default async function AgentPage() {
                             name="nudgeId"
                             value={relatedNudge.id}
                           />
-                          <button
-                            type="submit"
+                          <SubmitButton
+                            pendingLabel="Sending..."
                             className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
                           >
                             Send nudge email
-                          </button>
+                          </SubmitButton>
                         </form>
                         <form action={dismissNudge}>
                           <input
@@ -338,12 +346,12 @@ export default async function AgentPage() {
                             name="nudgeId"
                             value={relatedNudge.id}
                           />
-                          <button
-                            type="submit"
+                          <SubmitButton
+                            pendingLabel="Dismissing..."
                             className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
                           >
                             Dismiss nudge
-                          </button>
+                          </SubmitButton>
                         </form>
                       </div>
                     )}

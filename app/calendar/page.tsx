@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { AppShell } from "@/components/app-shell";
 import { getCurrentHouseholdContext } from "@/lib/household-context";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -115,14 +116,15 @@ export default async function CalendarPage({
                       </Link>
                       <form action={deleteCalendarEvent}>
                         <input type="hidden" name="eventId" value={event.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
                           title="Delete event"
                           aria-label={`Delete ${event.title}`}
+                          pendingLabel="Deleting event"
+                          showPendingLabel={false}
                           className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
                         >
                           <Trash2 className="size-4" aria-hidden="true" />
-                        </button>
+                        </SubmitButton>
                       </form>
                     </div>
                   </div>
@@ -232,12 +234,12 @@ export default async function CalendarPage({
                 </select>
               </div>
 
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel={editingEvent ? "Saving changes..." : "Adding event..."}
                 className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 {editingEvent ? "Save changes" : "Add event"}
-              </button>
+              </SubmitButton>
             </form>
           </section>
         </div>
