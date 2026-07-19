@@ -28,8 +28,11 @@ const validActions = [
 
 export async function runHouseholdAgent(
   triggerType: "manual" | "scheduled",
+  scheduledHouseholdId?: string,
 ) {
-  const { householdId } = await getCurrentHouseholdContext();
+  const householdId =
+    scheduledHouseholdId ??
+    (await getCurrentHouseholdContext()).householdId;
 
   const staleRunCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { error: staleRunError } = await supabaseAdmin
@@ -63,7 +66,7 @@ export async function runHouseholdAgent(
     throw new AgentRunInProgressError();
   }
 
-  const context = await loadAgentContext();
+  const context = await loadAgentContext(householdId);
 
   const { data: run, error: runError } = await supabaseAdmin
     .from("agent_runs")
