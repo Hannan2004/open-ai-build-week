@@ -177,6 +177,8 @@ Codex was used as a hands-on engineering collaborator throughout this project. I
 
 The runtime agent intentionally uses a configurable OpenRouter model so the MVP can be run with a free available model. The app relies on LLM reasoning over household context to generate proposals; it does not use a fixed deterministic decision checklist.
 
+> **Transparency note:** Codex was used to accelerate the project's development. The deployed runtime household agent uses a configurable free OpenRouter model, not GPT-5.6.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
