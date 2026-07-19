@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ArrowLeft, Check, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Plus, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -21,6 +21,14 @@ type GroceryItem = {
 type Member = {
   id: string;
   name: string;
+};
+
+const ACCENT = "#E3A857";
+
+const PRIORITY_DOT: Record<string, string> = {
+  high: "#D97B6B",
+  medium: ACCENT,
+  low: "#5FBFA0",
 };
 
 export default async function GroceriesPage({
@@ -53,21 +61,27 @@ export default async function GroceriesPage({
   const groceries = (groceriesResult.data ?? []) as GroceryItem[];
   const members = (membersResult.data ?? []) as Member[];
   const editingItem = groceries.find((item) => item.id === params.edit);
+  const neededCount = groceries.filter((item) => item.status === "needed").length;
 
   return (
     <AppShell householdName={household.name} memberName={membership.name}>
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <header className="flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm text-muted-foreground">Household workflow</p>
-            <h1 className="text-3xl font-bold tracking-tight">Groceries</h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Household workflow
+            </p>
+            <h1 className="mt-1.5 flex items-center gap-2.5 text-3xl font-semibold tracking-tight">
+              <ShoppingCart className="size-6" style={{ color: ACCENT }} aria-hidden="true" />
+              Groceries
+            </h1>
+            <p className="mt-1.5 text-muted-foreground">
               Keep the shared shopping list useful, current, and assigned.
             </p>
           </div>
           <a
             href="#grocery-form"
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90"
           >
             <Plus className="size-4" aria-hidden="true" />
             Add item
@@ -80,7 +94,7 @@ export default async function GroceriesPage({
               <div>
                 <h2 className="font-semibold">Shopping list</h2>
                 <p className="text-sm text-muted-foreground">
-                  {groceries.filter((item) => item.status === "needed").length} items still needed
+                  {neededCount} {neededCount === 1 ? "item" : "items"} still needed
                 </p>
               </div>
               <Link href="/dashboard" className="text-sm text-primary hover:underline">
@@ -96,26 +110,36 @@ export default async function GroceriesPage({
                 const isPurchased = item.status === "purchased";
 
                 return (
-                  <div key={item.id} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className={`font-medium ${isPurchased ? "line-through text-muted-foreground" : ""}`}>
-                          {item.name}
+                  <div
+                    key={item.id}
+                    className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span
+                        className="mt-1.5 size-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: isPurchased ? undefined : PRIORITY_DOT[item.priority] ?? ACCENT }}
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className={`font-medium ${isPurchased ? "line-through text-muted-foreground" : ""}`}>
+                            {item.name}
+                          </p>
+                          <Badge variant={item.priority === "high" ? "destructive" : "secondary"}>
+                            {item.priority}
+                          </Badge>
+                          {isPurchased && <Badge variant="outline">Purchased</Badge>}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.quantity || "Quantity not specified"}
+                          {item.needed_by
+                            ? ` · Needed by ${format(new Date(item.needed_by), "MMM d, yyyy 'at' p")}`
+                            : ""}
                         </p>
-                        <Badge variant={item.priority === "high" ? "destructive" : "secondary"}>
-                          {item.priority}
-                        </Badge>
-                        {isPurchased && <Badge variant="outline">Purchased</Badge>}
+                        <p className="text-sm text-muted-foreground">
+                          {assignee ? `Assigned to ${assignee.name}` : "Unassigned"}
+                        </p>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {item.quantity || "Quantity not specified"}
-                        {item.needed_by
-                          ? ` · Needed by ${format(new Date(item.needed_by), "MMM d, yyyy 'at' p")}`
-                          : ""}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {assignee ? `Assigned to ${assignee.name}` : "Unassigned"}
-                      </p>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
@@ -128,7 +152,7 @@ export default async function GroceriesPage({
                             aria-label={`Mark ${item.name} purchased`}
                             pendingLabel="Marking item purchased"
                             showPendingLabel={false}
-                            className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                           >
                             <Check className="size-4" aria-hidden="true" />
                           </SubmitButton>
@@ -138,7 +162,7 @@ export default async function GroceriesPage({
                         href={`/groceries?edit=${item.id}#grocery-form`}
                         title="Edit grocery item"
                         aria-label={`Edit ${item.name}`}
-                        className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <Pencil className="size-4" aria-hidden="true" />
                       </Link>
@@ -155,8 +179,8 @@ export default async function GroceriesPage({
             </div>
           </section>
 
-          <section id="grocery-form" className="rounded-lg border bg-background p-5">
-            <div className="mb-5 flex items-start justify-between gap-4">
+          <section id="grocery-form" className="h-fit rounded-lg border bg-background p-5">
+            <div className="mb-5 flex items-start justify-between gap-4 border-b pb-4">
               <div>
                 <h2 className="font-semibold">{editingItem ? "Edit item" : "Add an item"}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -164,8 +188,13 @@ export default async function GroceriesPage({
                 </p>
               </div>
               {editingItem && (
-                <Link href="/groceries" title="Cancel editing" aria-label="Cancel editing">
-                  <ArrowLeft className="size-5 text-muted-foreground" aria-hidden="true" />
+                <Link
+                  href="/groceries"
+                  title="Cancel editing"
+                  aria-label="Cancel editing"
+                  className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <ArrowLeft className="size-4" aria-hidden="true" />
                 </Link>
               )}
             </div>
@@ -183,7 +212,7 @@ export default async function GroceriesPage({
                   required
                   defaultValue={editingItem?.name}
                   placeholder="Milk"
-                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
@@ -195,7 +224,7 @@ export default async function GroceriesPage({
                     name="quantity"
                     defaultValue={editingItem?.quantity ?? ""}
                     placeholder="2 cartons"
-                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>
 
@@ -205,7 +234,7 @@ export default async function GroceriesPage({
                     id="priority"
                     name="priority"
                     defaultValue={editingItem?.priority ?? "medium"}
-                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -225,7 +254,7 @@ export default async function GroceriesPage({
                       ? format(new Date(editingItem.needed_by), "yyyy-MM-dd'T'HH:mm")
                       : undefined
                   }
-                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
@@ -235,7 +264,7 @@ export default async function GroceriesPage({
                   id="assignedMemberId"
                   name="assignedMemberId"
                   defaultValue={editingItem?.assigned_member_id ?? ""}
-                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Unassigned</option>
                   {members.map((member) => (
@@ -246,7 +275,7 @@ export default async function GroceriesPage({
 
               <SubmitButton
                 pendingLabel={editingItem ? "Saving changes..." : "Adding item..."}
-                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 {editingItem ? "Save changes" : "Add item"}
               </SubmitButton>
