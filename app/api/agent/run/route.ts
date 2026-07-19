@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { AgentRunInProgressError } from "@/lib/agent/errors";
 import { runHouseholdAgent } from "@/lib/agent/run";
 
 export async function POST() {
@@ -16,6 +17,16 @@ export async function POST() {
       result,
     });
   } catch (error) {
+    if (error instanceof AgentRunInProgressError) {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 409 },
+      );
+    }
+
     return Response.json(
       {
         success: false,

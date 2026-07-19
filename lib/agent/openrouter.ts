@@ -18,7 +18,7 @@ export async function askHouseholdAgent(input: {
 }): Promise<AgentResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const model = process.env.OPENROUTER_MODEL || "openrouter/free";
-  const url = process.env.URL;
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
   
   if (!apiKey) {
     throw new Error("Missing OPENROUTER_API_KEY.");
@@ -72,34 +72,51 @@ Return exactly this JSON shape:
 }
 `;
 
-  const response = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": `${url}`,
-      "X-Title": "Household Ops Agent",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: JSON.stringify(input.context),
-        },
-      ],
-      response_format: {
-        type: "json_object",
-      },
-    }),
-  });
+  let response: Response;
 
-  const data = (await response.json()) as OpenRouterResponse;
+  try {
+    response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": appUrl,
+        "X-Title": "Household Ops Agent",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: JSON.stringify(input.context),
+          },
+        ],
+        response_format: {
+          type: "json_object",
+        },
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("OpenRouter did not respond within one minute. Please retry.");
+    }
+
+    throw new Error("Unable to reach OpenRouter. Please retry.");
+  }
+
+  let data: OpenRouterResponse;
+
+  try {
+    data = (await response.json()) as OpenRouterResponse;
+  } catch {
+    throw new Error("OpenRouter returned an unreadable response.");
+  }
 
   if (!response.ok) {
     throw new Error(data.error?.message || "OpenRouter request failed.");

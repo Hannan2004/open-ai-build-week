@@ -1,5 +1,6 @@
 import { getCurrentHouseholdContext } from "@/lib/household-context";
 import { loadAgentContext } from "@/lib/agent/context";
+import { AgentRunInProgressError } from "@/lib/agent/errors";
 import { askHouseholdAgent } from "@/lib/agent/openrouter";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -29,6 +30,39 @@ export async function runHouseholdAgent(
   triggerType: "manual" | "scheduled",
 ) {
   const { householdId } = await getCurrentHouseholdContext();
+
+  const staleRunCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { error: staleRunError } = await supabaseAdmin
+    .from("agent_runs")
+    .update({
+      status: "failed",
+      summary: "Agent run timed out before completion.",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("household_id", householdId)
+    .eq("status", "running")
+    .lt("started_at", staleRunCutoff);
+
+  if (staleRunError) {
+    throw new Error(staleRunError.message);
+  }
+
+  const { data: activeRun, error: activeRunError } = await supabaseAdmin
+    .from("agent_runs")
+    .select("id")
+    .eq("household_id", householdId)
+    .eq("status", "running")
+    .limit(1)
+    .maybeSingle();
+
+  if (activeRunError) {
+    throw new Error(activeRunError.message);
+  }
+
+  if (activeRun) {
+    throw new AgentRunInProgressError();
+  }
+
   const context = await loadAgentContext();
 
   const { data: run, error: runError } = await supabaseAdmin
